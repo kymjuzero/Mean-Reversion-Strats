@@ -284,7 +284,7 @@ def create_visualization(data, strategy, params, ticker="STOCK"):
 
 if __name__ == "__main__":
     api_key = "phX3UGTSILWy8uHUdxQauDRZF578YwRL"
-    ticker = "AAPL"
+    ticker = "TSLA"
     days = 500
     
     print("="*70)
