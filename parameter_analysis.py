@@ -8,9 +8,9 @@ Perfect for understanding how we derive θ, μ, and σ from the data.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from ou_process import OUProcess
 from ou_estimator import OUEstimator
 from trading_strategy import MeanReversionStrategy
+from polygon_data import PolygonDataFetcher
 
 
 def detailed_parameter_analysis(data, dt=1.0, true_params=None):
@@ -193,5 +193,166 @@ def compare_estimation_methods_detailed(data, dt=1.0, true_params=None):
 
 # Note: This module provides analysis functions for real data
 # Use detailed_parameter_analysis() and compare_estimation_methods_detailed()
-# with your real market data from test_real_data.py
+# with your real market data from polygon_data.py
+
+
+def create_visualization(data, strategy, params, ticker="STOCK"):
+    fig, axes = plt.subplots(3, 2, figsize=(15, 12))
+    
+    time_steps = np.arange(len(data))
+    
+    axes[0, 0].plot(time_steps, data, 'b-', linewidth=1, label='Price')
+    axes[0, 0].axhline(y=params['mu'], color='r', linestyle='--', label=f'Mean (μ={params["mu"]:.2f})')
+    axes[0, 0].set_title(f'{ticker} Price Series')
+    axes[0, 0].set_xlabel('Time')
+    axes[0, 0].set_ylabel('Price')
+    axes[0, 0].legend()
+    axes[0, 0].grid(True, alpha=0.3)
+    
+    stationary_std = np.sqrt(params['stationary_variance'])
+    upper_threshold = params['mu'] + 2 * stationary_std
+    lower_threshold = params['mu'] - 2 * stationary_std
+    
+    signals = []
+    for price in data:
+        signal, _ = strategy.generate_signal(price)
+        signals.append(signal)
+    
+    axes[0, 1].plot(time_steps, data, 'b-', linewidth=1, label='Price')
+    axes[0, 1].axhline(y=params['mu'], color='r', linestyle='--', label='Mean')
+    axes[0, 1].axhline(y=upper_threshold, color='g', linestyle=':', label='SELL threshold')
+    axes[0, 1].axhline(y=lower_threshold, color='orange', linestyle=':', label='BUY threshold')
+    
+    buy_indices = [i for i, s in enumerate(signals) if s == 1]
+    sell_indices = [i for i, s in enumerate(signals) if s == -1]
+    
+    if buy_indices:
+        axes[0, 1].scatter(buy_indices, data[buy_indices], color='green', marker='^', s=100, label='BUY', zorder=5)
+    if sell_indices:
+        axes[0, 1].scatter(sell_indices, data[sell_indices], color='red', marker='v', s=100, label='SELL', zorder=5)
+    
+    axes[0, 1].set_title('Trading Signals')
+    axes[0, 1].set_xlabel('Time')
+    axes[0, 1].set_ylabel('Price')
+    axes[0, 1].legend()
+    axes[0, 1].grid(True, alpha=0.3)
+    
+    deviation = data - params['mu']
+    axes[1, 0].plot(time_steps, deviation, 'purple', linewidth=1)
+    axes[1, 0].axhline(y=0, color='r', linestyle='--')
+    axes[1, 0].set_title('Deviation from Mean')
+    axes[1, 0].set_xlabel('Time')
+    axes[1, 0].set_ylabel('Deviation')
+    axes[1, 0].grid(True, alpha=0.3)
+    
+    z_scores = deviation / stationary_std
+    axes[1, 1].plot(time_steps, z_scores, 'cyan', linewidth=1)
+    axes[1, 1].axhline(y=0, color='r', linestyle='--')
+    axes[1, 1].axhline(y=2, color='g', linestyle=':', label='SELL threshold')
+    axes[1, 1].axhline(y=-2, color='orange', linestyle=':', label='BUY threshold')
+    axes[1, 1].set_title('Z-Score')
+    axes[1, 1].set_xlabel('Time')
+    axes[1, 1].set_ylabel('Z-Score')
+    axes[1, 1].legend()
+    axes[1, 1].grid(True, alpha=0.3)
+    
+    backtest_results = strategy.backtest(data, dt=1.0)
+    portfolio_values = backtest_results['portfolio_values']
+    
+    axes[2, 0].plot(range(len(portfolio_values)), portfolio_values, 'g-', linewidth=2)
+    axes[2, 0].set_title(f'Backtest Performance (Return: {backtest_results["total_return"]*100:.2f}%)')
+    axes[2, 0].set_xlabel('Time')
+    axes[2, 0].set_ylabel('Portfolio Value')
+    axes[2, 0].grid(True, alpha=0.3)
+    
+    estimator = OUEstimator()
+    lags = range(1, min(50, len(data)//2))
+    autocorrs = [estimator.estimate_autocorrelation(data, lag=l) for l in lags]
+    
+    axes[2, 1].plot(lags, autocorrs, 'ro-', markersize=4)
+    axes[2, 1].axhline(y=0, color='k', linestyle='--')
+    axes[2, 1].set_title('Autocorrelation Function')
+    axes[2, 1].set_xlabel('Lag')
+    axes[2, 1].set_ylabel('Autocorrelation')
+    axes[2, 1].grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.savefig('ou_analysis.png', dpi=150, bbox_inches='tight')
+    print(f"\nVisualization saved to ou_analysis.png")
+    plt.close()
+
+
+if __name__ == "__main__":
+    api_key = "phX3UGTSILWy8uHUdxQauDRZF578YwRL"
+    ticker = "AAPL"
+    days = 500
+    
+    print("="*70)
+    print("PARAMETER ESTIMATION ANALYSIS - REAL DATA")
+    print("="*70)
+    print(f"\nFetching {ticker} data ({days} days)...")
+    
+    fetcher = PolygonDataFetcher(api_key)
+    
+    try:
+        if ticker.startswith("X:"):
+            data = fetcher.get_crypto_data(ticker, days=days)
+        else:
+            data = fetcher.get_stock_data(ticker, days=days)
+        
+        print(f"✓ Fetched {len(data)} data points")
+        print(f"  Price range: ${data.min():.2f} - ${data.max():.2f}")
+        print(f"  Mean price: ${data.mean():.2f}")
+        
+        dt = 1.0
+        
+        print("\n" + "="*70)
+        print("DETAILED PARAMETER ANALYSIS")
+        print("="*70)
+        params = detailed_parameter_analysis(data, dt=dt, true_params=None)
+        
+        print("\n" + "="*70)
+        print("ESTIMATION METHOD COMPARISON")
+        print("="*70)
+        method_results = compare_estimation_methods_detailed(data, dt=dt, true_params=None)
+        
+        print("\n" + "="*70)
+        print("TRADING STRATEGY")
+        print("="*70)
+        strategy = MeanReversionStrategy(threshold_sigma=2.0)
+        strategy.fit(data, dt=dt)
+        
+        current_price = data[-1]
+        signal, signal_type = strategy.generate_signal(current_price)
+        deviation = current_price - params['mu']
+        z_score = deviation / params['stationary_std']
+        
+        print(f"\nCurrent Price: ${current_price:.2f}")
+        print(f"Mean (μ): ${params['mu']:.2f}")
+        print(f"Deviation: ${deviation:+.2f}")
+        print(f"Z-Score: {z_score:.2f}")
+        print(f"Signal: {signal_type}")
+        
+        print("\n" + "="*70)
+        print("BACKTEST")
+        print("="*70)
+        backtest_results = strategy.backtest(data, dt=dt, allow_short=True, exit_at_mean=True)
+        print(f"Total Return: {backtest_results['total_return']*100:.2f}%")
+        print(f"Sharpe Ratio: {backtest_results['sharpe_ratio']:.4f}")
+        print(f"Max Drawdown: {backtest_results['max_drawdown']*100:.2f}%")
+        print(f"Number of Trades: {backtest_results['num_trades']}")
+        
+        print("\n" + "="*70)
+        print("CREATING VISUALIZATION")
+        print("="*70)
+        create_visualization(data, strategy, params, ticker=ticker)
+        
+        print("\n" + "="*70)
+        print("ANALYSIS COMPLETE")
+        print("="*70)
+        
+    except Exception as e:
+        print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
 
