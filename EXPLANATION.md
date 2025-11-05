@@ -152,102 +152,7 @@ Simple sample mean.
 
 ---
 
-## PART 4: COULD THIS BE SIMPLER?
-
-### What We Could Remove (But Shouldn't)
-
-1. **Alternative Estimation Methods** (Regression, OLS):
-   - Could remove these, keep only MLE
-   - **Why We Keep Them**: Allows comparison, shows understanding of multiple approaches
-
-2. **Visualization**:
-   - Could remove the plotting code
-   - **Why We Keep It**: Helps visualize the strategy, shows "work" clearly
-
-3. **Shorting Capability**:
-   - Could only do long positions
-   - **Why We Keep It**: True mean reversion works both ways (above mean = short opportunity)
-
-4. **Multiple Exit Conditions**:
-   - Could just use signal-based exits
-   - **Why We Keep Them**: Exit at mean is more realistic for mean reversion
-
-### What We MUST Keep (Core Requirements)
-
-1. **OU Process Model**: ✅ Required
-2. **Parameter Estimation Strategy**: ✅ Main focus of original prompt
-3. **Signal Generation**: ✅ Required (above mean = SELL, below = BUY)
-4. **MLE Method**: ✅ QuestDB article's recommended method
-5. **Stationary Variance**: ✅ QuestDB article's recommendation for signal generation
-
-### Is This The Simplest?
-
-**Answer: Almost, but with good reasons for the extras.**
-
-**Minimal Version Would Be**:
-- `ou_estimator.py` (MLE only, no alternatives)
-- `trading_strategy.py` (signals only, no backtest)
-- `parameter_analysis.py` (just run and print)
-
-**What We Have** (Production-Ready):
-- Full MLE implementation ✅
-- Alternative methods for comparison ✅
-- Complete backtesting ✅
-- Real data integration ✅
-- Visualization ✅
-
-**Verdict**: Could be simpler, but current version is production-ready and demonstrates full understanding.
-
----
-
-## PART 5: DOES THIS FOLLOW THE ORIGINAL PROMPT?
-
-### Original Prompt Requirements:
-
-1. ✅ **"Build an Ornstein-Uhlenbeck Process model"**
-   - Implemented in `ou_estimator.py` and `trading_strategy.py`
-
-2. ✅ **"Gain an understanding of the method to derive the variables"**
-   - `DERIVATION.md` has complete mathematical derivation
-   - `parameter_analysis.py` shows step-by-step calculations
-
-3. ✅ **"Main focus: your strategy to estimating the OU parameters"**
-   - `ou_estimator.py` implements QuestDB's MLE method
-   - Shows autocorrelation → theta, sample mean → mu, MLE formula → sigma
-
-4. ✅ **"If price strays above mean = SELL, below mean = BUY"**
-   - `generate_signal()` in `trading_strategy.py` does exactly this
-
-5. ✅ **"Running code ready to show your work"**
-   - `parameter_analysis.py` is the main entry point
-   - Can run on any ticker with real data
-
-6. ✅ **"Follow QuestDB article"**
-   - Uses exact formulas from QuestDB article
-   - Uses stationary variance for signal generation (QuestDB recommendation)
-   - Implements MLE method (QuestDB's recommended approach)
-
-### QuestDB Article Requirements:
-
-1. ✅ **Mathematical Foundation**: dX_t = θ(μ - X_t)dt + σdW_t
-2. ✅ **Parameter Estimation**: θ = -ln(ρ)/Δt, μ = mean, σ² = MLE formula
-3. ✅ **Stationary Distribution**: Variance = σ²/(2θ) - used for signals
-4. ✅ **Mean Reversion Speed**: Half-life calculation (ln(2)/θ)
-5. ✅ **Risk Management**: Position sizing and stop-loss (implemented in backtest)
-6. ✅ **Trading Signals**: Based on deviations from mean
-
-### What We Added (Beyond Requirements):
-
-- Shorting capability (makes sense for mean reversion)
-- Multiple estimation methods (shows understanding)
-- Visualization (helps demonstrate work)
-- Real data integration (you requested this)
-
-**Verdict**: ✅ **FULLY FOLLOWS ORIGINAL PROMPT** + Extras that make it production-ready
-
----
-
-## PART 6: HOW IT ALL WORKS TOGETHER
+## PART 4: HOW IT ALL WORKS TOGETHER
 
 ### Step-by-Step Flow:
 
@@ -276,7 +181,7 @@ Simple sample mean.
 
 ---
 
-## PART 7: KEY INSIGHTS
+## PART 5: KEY INSIGHTS
 
 ### Why Stationary Variance Matters
 
